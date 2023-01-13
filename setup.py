@@ -50,6 +50,12 @@ if not os.path.exists("data/url_clicks.csv"):
     with open("data/url_clicks.csv", "w") as f:
         f.write("URL,Clicks ")
 
+# creating assets directory
+if not os.path.exists("assets"):
+    os.makedirs("assets") # create an assets directory in the root directory of your project
+    # this is where your chrome driver will be stored
+
+# creating src directory
 if not os.path.exists("src"):
     os.makedirs("src") # create a src directory in the root directory of your project
 

@@ -1,1 +1,5 @@
-{"github_username": "your_github_username", "github_password": "your_github_password", "chrome_driver_path": "path_to_your_chrome_driver"}
+{
+    "github_username": "your_github_username",
+    "github_password": "your_github_password",
+    "chrome_driver_path": "../assets/chromedriver",
+}
