@@ -53,7 +53,6 @@ if not os.path.exists("data/url_clicks.csv"):
 if not os.path.exists("src"):
     os.makedirs("src") # create a src directory in the root directory of your project
 
-
 def install(package):
     try:
         if hasattr(pip, 'main'):
