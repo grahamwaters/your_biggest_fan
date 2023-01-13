@@ -7,11 +7,12 @@ import os
 import datetime
 from datetime import datetime
 from selenium import webdriver
+from bs4 import BeautifulSoup
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
-
+import requests
 url_clicks = {}
 with open("data/url_clicks.csv", "w") as csv_file:
     csv_file.write("URL,Clicks\n")
@@ -52,6 +53,91 @@ driver.get("https://www.github.com/login")
 # wait ten seconds for the follow buttons to load
 # time.sleep(10)
 
+#* Functions
+
+
+def scrape_for_users(driver):
+    """
+    scrape_for_users - takes a driver and scrapes the current page for users that are interested in the same things as you are and saves them to a json file in the data folder.
+    :param driver: _description_
+    :type driver: _type_
+    """
+    current_page = driver.current_url
+
+    #^ We want to request several pages from github and scrape them for users that are interested in the same things as you are.
+    #^ i.e. https://github.com/microsoft/rnx-kit
+    # * first scrape - https://github.com/microsoft/rnx-kit/watchers
+    # & second scrape - https://github.com/microsoft/rnx-kit/contributors
+    # ! third scrape - https://github.com/microsoft/rnx-kit/stargazers
+
+    suffixes = ["watchers", "stargazers"]
+    base = current_page + "/"
+    urls = [base + suffix for suffix in suffixes]
+
+    #^ We want to scrape the pages for users that are interested in the same things as you are.
+    for url in urls:
+        #^ Get the html of the page
+        try:
+            page_html = requests.get(url).text
+        except Exception as e:
+            print("Error getting the page html: ", e)
+
+        #^ Save the html to a file in the data folder
+        try:
+            with open("data/page.html", "w") as f:
+                f.write(page_html)
+        except Exception as e:
+            print("Error saving the page html: ", e)
+
+        #^ Scrape the html for users
+
+        soup = BeautifulSoup(page_html, "html.parser")
+        users = soup.find_all("a", {"class": "Link--primary"})
+        users = [user.text for user in users]
+
+        #^ Save the users to the dictionary (json) in the data folder
+        # if the users_dict does not already exist in the data folder then make it
+        if not os.path.exists("data/users_dict.json"):
+            users_dict = {}
+        else:
+            with open("data/users_dict.json", "r") as f:
+                users_dict = json.load(f)
+
+        # get the users from the page
+        # f4 Link--primary
+        # the usernames are between these:
+        # - data-hovercard-type="user" data-hovercard-url="/users/
+        # and
+        # - /hovercard"
+        # i.e. data-hovercard-type="user" data-hovercard-url="/users/username/hovercard"
+        user_pattern = 'data-hovercard-type="user" data-hovercard-url="/users/'
+        users = [] # will hold the usernames
+        if soup is not None:
+            # look for the pattern
+            for line in soup:
+                if user_pattern in line:
+                    # get the username from the line
+                    # the username is between the pattern and the /hovercard"
+                    # i.e. data-hovercard-type="user" data-hovercard-url="/users/username/hovercard"
+                    # so we need to get the index of the pattern and the index of the /hovercard"
+                    # then we can slice the line to get the username
+                    pattern_index = line.index(user_pattern)
+                    hovercard_index = line.index("/hovercard")
+                    username = line[pattern_index + len(user_pattern):hovercard_index]
+                    users.append(username) # add the username to the list of users
+            # update the dictionary of users with the new users and save it back to the csv file
+            users_dict.update({current_page: users}) # we can extract each user from the list and add them to the dictionary later
+            with open("data/users_dict.json", "w") as f:
+                json.dump(users_dict, f)
+
+    # step 5
+    try:
+        os.remove("data/page.html")
+    except Exception as e:
+        print("Error removing the page html: ", e)
+
+#* Main Section
+
 green_light = input("Press enter to start following people on GitHub:\nNote: This indicates that you are logged in and ready for every 'follow' button to be potentially clicked. ")
 
 # go to IBM people page
@@ -61,7 +147,7 @@ print(
 )
 time.sleep(5)  # wait five seconds for the page to load
 
-
+beta_testing_background_runner = True
 
 while True:
     if driver.current_url in url_clicks: # if the url is in the dictionary
@@ -72,9 +158,10 @@ while True:
     #* load good_pages from config
     good_pages = data["good_pages"] # these are strings indicating a page that is scrapable for follow buttons
     # only follow if the url contains a match from the good_pages list in the url
-    if not any(good_page in driver.current_url for good_page in good_pages): # if the current url does not contain any of the good pages
-        # time.sleep(3)
-        continue  # skip to the next iteration of the loop
+    if not beta_testing_background_runner:
+        if not any(good_page in driver.current_url for good_page in good_pages): # if the current url does not contain any of the good pages
+            # time.sleep(3)
+            continue  # skip to the next iteration of the loop
     follow_buttons = []  # init
     try:
         # Find the buttons
@@ -96,8 +183,10 @@ while True:
         print(f"Follow button clicked at {datetime.now()} url: {driver.current_url}")
         time.sleep(random.randint(6, 10))
     except ValueError as e:
+        scrape_for_users(driver) # scrape the page for users links
         pass  # this value error means the follow buttons list is empty and we should just skip to the next iteration of the loop
     except Exception as e:
+        scrape_for_users(driver) # scrape the page for users links
         pass
     if re.search("yahoo", driver.current_url):
         break
