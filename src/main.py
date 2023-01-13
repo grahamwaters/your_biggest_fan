@@ -70,76 +70,101 @@ def scrape_for_users(driver):
     # & second scrape - https://github.com/microsoft/rnx-kit/contributors
     # ! third scrape - https://github.com/microsoft/rnx-kit/stargazers
 
-    suffixes = ["watchers", "stargazers"]
-    base = current_page + "/"
-    urls = [base + suffix for suffix in suffixes]
+    if "people" in current_page:
+        current_page = current_page.replace("/people", "")
 
-    #^ We want to scrape the pages for users that are interested in the same things as you are.
-    for url in urls:
-        # the suffix_page is the page that we are scraping i.e. ?page=2
-        # get the first ten pages
-        for suffix_page in range(1, 11):
-            url = url + "?page=" + str(suffix_page)
+    # go to the repositories page for the company (user)
+    driver.get(current_page + "/repositories")
+    soup = BeautifulSoup(driver.page_source, "html.parser")
+    repos = soup.find_all("a", {"itemprop": "name codeRepository"})
+    # get the links for the repositories
+    repos = [repo["href"] for repo in repos]
 
-            #^ Get the html of the page
-            try:
-                page_html = requests.get(url).text
-            except Exception as e:
-                print("Error getting the page html: ", e)
 
-            #^ Save the html to a file in the data folder
-            try:
-                with open("data/page.html", "w") as f:
-                    f.write(page_html)
-            except Exception as e:
-                print("Error saving the page html: ", e)
+    for repo in repos:
+        repo = 'https://github.com' + repo
+        driver.get(repo) # go to the repo
+        # wait till the page loads using EC (expected conditions)
+        time.sleep(5) #todo make this dynamic
+        current_page = driver.current_url
+        suffixes = ["watchers", "stargazers", "people"]
+        base = current_page + "/"
+        urls = [base + suffix for suffix in suffixes]
 
-            #^ Scrape the html for users
+        #^ We want to scrape the pages for users that are interested in the same things as you are.
+        for url in urls:
+            print(url)
+            # the suffix_page is the page that we are scraping i.e. ?page=2
+            # get the first ten pages
+            baseurl = url
+            time.sleep(random.randint(1, 5))
+            for suffix_page in range(1, 11):
+                url = baseurl + "?page=" + str(suffix_page)
+                #https://github.com/jakevdp/sklearn_tutorial/watchers?page=2
+                # navigate to the page
+                driver.get(url)
+                # wait till the page loads
+                driver.implicitly_wait(10)
 
-            soup = BeautifulSoup(page_html, "html.parser")
-            users = soup.find_all("a", {"class": "Link--primary"})
-            users = [user.text for user in users]
+                #^ Get the html of the page
+                try:
+                    page_html = requests.get(url).text
+                except Exception as e:
+                    print("Error getting the page html: ", e)
 
-            #^ Save the users to the dictionary (json) in the data folder
-            # if the users_dict does not already exist in the data folder then make it
-            if not os.path.exists("data/users_dict.json"):
-                users_dict = {}
-            else:
-                with open("data/users_dict.json", "r") as f:
-                    users_dict = json.load(f)
+                #^ Save the html to a file in the data folder
+                try:
+                    with open("data/page.html", "w") as f:
+                        f.write(page_html)
+                except Exception as e:
+                    print("Error saving the page html: ", e)
 
-            # get the users from the page
-            # f4 Link--primary
-            # the usernames are between these:
-            # - data-hovercard-type="user" data-hovercard-url="/users/
-            # and
-            # - /hovercard"
-            # i.e. data-hovercard-type="user" data-hovercard-url="/users/username/hovercard"
-            user_pattern = 'data-hovercard-type="user" data-hovercard-url="/users/'
-            users = [] # will hold the usernames
-            if soup is not None:
-                # look for the pattern
-                for line in soup:
-                    if user_pattern in line:
-                        # get the username from the line
-                        # the username is between the pattern and the /hovercard"
-                        # i.e. data-hovercard-type="user" data-hovercard-url="/users/username/hovercard"
-                        # so we need to get the index of the pattern and the index of the /hovercard"
-                        # then we can slice the line to get the username
-                        pattern_index = line.index(user_pattern)
-                        hovercard_index = line.index("/hovercard")
-                        username = line[pattern_index + len(user_pattern):hovercard_index]
-                        users.append(username) # add the username to the list of users
-                # update the dictionary of users with the new users and save it back to the csv file
-                users_dict.update({current_page: users}) # we can extract each user from the list and add them to the dictionary later
-                with open("data/users_dict.json", "w") as f:
-                    json.dump(users_dict, f)
+                #^ Scrape the html for users
 
-    # step 5
-    try:
-        os.remove("data/page.html")
-    except Exception as e:
-        print("Error removing the page html: ", e)
+                soup = BeautifulSoup(page_html, "html.parser")
+                users = soup.find_all("a", {"class": "Link--primary"})
+                users = [user.text for user in users]
+
+                #^ Save the users to the dictionary (json) in the data folder
+                # if the users_dict does not already exist in the data folder then make it
+                if not os.path.exists("data/users_dict.json"):
+                    users_dict = {}
+                else:
+                    with open("data/users_dict.json", "r") as f:
+                        users_dict = json.load(f)
+
+                # get the users from the page
+                # f4 Link--primary
+                # the usernames are between these:
+                # - data-hovercard-type="user" data-hovercard-url="/users/
+                # and
+                # - /hovercard"
+                # i.e. data-hovercard-type="user" data-hovercard-url="/users/username/hovercard"
+                user_pattern = 'data-hovercard-type="user" data-hovercard-url="/users/'
+                users = [] # will hold the usernames
+                if soup is not None:
+                    # look for the pattern
+                    for line in soup:
+                        if user_pattern in line:
+                            # get the username from the line
+                            # the username is between the pattern and the /hovercard"
+                            # i.e. data-hovercard-type="user" data-hovercard-url="/users/username/hovercard"
+                            # so we need to get the index of the pattern and the index of the /hovercard"
+                            # then we can slice the line to get the username
+                            pattern_index = line.index(user_pattern)
+                            hovercard_index = line.index("/hovercard")
+                            username = line[pattern_index + len(user_pattern):hovercard_index]
+                            users.append(username) # add the username to the list of users
+                    # update the dictionary of users with the new users and save it back to the csv file
+                    users_dict.update({current_page: users}) # we can extract each user from the list and add them to the dictionary later
+                    with open("data/users_dict.json", "w") as f:
+                        json.dump(users_dict, f)
+
+        # step 5
+        try:
+            os.remove("data/page.html")
+        except Exception as e:
+            print("Error removing the page html: ", e)
 
 #* Main Section
 
