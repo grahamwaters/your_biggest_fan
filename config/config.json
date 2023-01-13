@@ -1,5 +1,6 @@
 {
     "github_username": "your_github_username",
     "github_password": "your_github_password",
-    "chrome_driver_path": "../assets/chromedriver",
+    "chrome_driver_path": "assets/chromedriver",
+    "good_pages": ["people","users"]
 }

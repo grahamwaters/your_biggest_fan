@@ -3,6 +3,7 @@ import random
 import re
 import json
 import time
+import os
 import datetime
 from datetime import datetime
 from selenium import webdriver
@@ -12,10 +13,10 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 
 url_clicks = {}
-with open("../data/url_clicks.csv", "w") as csv_file:
+with open("data/url_clicks.csv", "w") as csv_file:
     csv_file.write("URL,Clicks\n")
 
-with open("../config/config.json") as f:
+with open("config/config.json") as f:
     data = json.load(f)
 
 options = webdriver.ChromeOptions()
@@ -34,20 +35,24 @@ driver = webdriver.Chrome(
 )
 driver.get("https://www.github.com/login")
 
-username = WebDriverWait(driver, 10).until(
-    EC.presence_of_element_located((By.ID, "login_field"))
-)
-password = WebDriverWait(driver, 10).until(
-    EC.presence_of_element_located((By.ID, "password"))
-)
-username.send_keys(data["github_username"])
-time.sleep(random.randint(1, 5))
-password.send_keys(data["github_password"])
-time.sleep(random.randint(1, 5))
-password.send_keys(Keys.RETURN)
+
+#* If using auto-login features then keep the following lines
+# username = WebDriverWait(driver, 10).until(
+#     EC.presence_of_element_located((By.ID, "login_field"))
+# )
+# password = WebDriverWait(driver, 10).until(
+#     EC.presence_of_element_located((By.ID, "password"))
+# )
+# username.send_keys(data["github_username"])
+# time.sleep(random.randint(1, 5))
+# password.send_keys(data["github_password"])
+# time.sleep(random.randint(1, 5))
+# password.send_keys(Keys.RETURN)
 
 # wait ten seconds for the follow buttons to load
-time.sleep(10)
+# time.sleep(10)
+
+green_light = input("Press enter to start following people on GitHub:\nNote: This indicates that you are logged in and ready for every 'follow' button to be potentially clicked. ")
 
 # go to IBM people page
 driver.get("https://github.com/orgs/IBM/people")
@@ -56,17 +61,19 @@ print(
 )
 time.sleep(5)  # wait five seconds for the page to load
 
-if driver.current_url in url_clicks:
-    if url_clicks[driver.current_url] >= 5:
-        time.sleep(3)
-        continue
-else:
-    url_clicks[driver.current_url] = 0
+
 
 while True:
-    # only follow if the url contains a "people" in the url
-    if not re.search("people", driver.current_url):
-        time.sleep(3)
+    if driver.current_url in url_clicks: # if the url is in the dictionary
+        if url_clicks[driver.current_url] >= 5: # if the url has been clicked 5 times
+            continue # skip to the next iteration of the loop
+        else:
+            url_clicks[driver.current_url] = 0
+    #* load good_pages from config
+    good_pages = data["good_pages"] # these are strings indicating a page that is scrapable for follow buttons
+    # only follow if the url contains a match from the good_pages list in the url
+    if not any(good_page in driver.current_url for good_page in good_pages): # if the current url does not contain any of the good pages
+        # time.sleep(3)
         continue  # skip to the next iteration of the loop
     follow_buttons = []  # init
     try:
