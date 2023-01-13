@@ -55,7 +55,19 @@ driver.get("https://www.github.com/login")
 
 #* Functions
 
-def click_follow_buttons(driver, data):
+def click_follow_buttons(driver):
+    """
+    click_follow_buttons
+
+    _extended_summary_
+
+    :param driver: _description_
+    :type driver: _type_
+    :param data: the data from the config file, contains the good pages to scrape
+    :type data: _type_
+    :return: _description_
+    :rtype: _type_
+    """
     while_counter = 0
     url_clicks = {}
     while True:
@@ -64,8 +76,6 @@ def click_follow_buttons(driver, data):
                 continue
             else:
                 url_clicks[driver.current_url] = 0
-        if not any(good_page in driver.current_url for good_page in data["good_pages"]):
-            continue
         follow_buttons = driver.find_elements(By.CSS_SELECTOR, "input.btn")
         follow_buttons = [button for button in follow_buttons if button.is_displayed() and button.is_enabled() and button.get_attribute("value") == "Follow" and button.location["y"] < driver.execute_script("return window.innerHeight")]
         if follow_buttons:
@@ -200,7 +210,7 @@ def scrape_for_users(driver):
                     users_dict.update({current_page: users}) # we can extract each user from the list and add them to the dictionary later
                     with open("data/users_dict.json", "w") as f:
                         json.dump(users_dict, f)
-
+                    click_follow_buttons(driver)
         # step 5
         try:
             os.remove("data/page.html")
