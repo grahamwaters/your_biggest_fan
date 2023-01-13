@@ -55,6 +55,30 @@ driver.get("https://www.github.com/login")
 
 #* Functions
 
+def click_follow_buttons(driver, data):
+    while_counter = 0
+    url_clicks = {}
+    while True:
+        if driver.current_url in url_clicks:
+            if url_clicks[driver.current_url] >= 5:
+                continue
+            else:
+                url_clicks[driver.current_url] = 0
+        if not any(good_page in driver.current_url for good_page in data["good_pages"]):
+            continue
+        follow_buttons = driver.find_elements(By.CSS_SELECTOR, "input.btn")
+        follow_buttons = [button for button in follow_buttons if button.is_displayed() and button.is_enabled() and button.get_attribute("value") == "Follow" and button.location["y"] < driver.execute_script("return window.innerHeight")]
+        if follow_buttons:
+            follow_buttons[random.randint(0, len(follow_buttons) - 1)].click()
+            print(f"Follow button clicked at {datetime.now()} url: {driver.current_url}")
+            time.sleep(random.randint(6, 10))
+        if url_clicks[driver.current_url] >= 30 or while_counter >= 30:
+            break
+        if "This repository has no more watchers" in driver.page_source:
+            break
+        while_counter += 1
+
+
 
 def scrape_for_users(driver):
     """
@@ -80,7 +104,7 @@ def scrape_for_users(driver):
     # get the links for the repositories
     repos = [repo["href"] for repo in repos]
 
-
+    viable_urls = [] # the urls that we will scrape
     for repo in repos:
         repo = 'https://github.com' + repo
         driver.get(repo) # go to the repo
@@ -99,6 +123,13 @@ def scrape_for_users(driver):
             baseurl = url
             time.sleep(random.randint(1, 5))
             for suffix_page in range(1, 11):
+                time.sleep(random.randint(1, 10))
+                # randomly sleep 10 seconds every 5 pages
+                if suffix_page % 5 == 0:
+                    time.sleep(10)
+                # if the page content contains the text "This repository has no more watchers." then break
+                if "This repository has no more watchers" in driver.page_source:
+                    break
                 url = baseurl + "?page=" + str(suffix_page)
                 #https://github.com/jakevdp/sklearn_tutorial/watchers?page=2
                 # navigate to the page
@@ -106,6 +137,14 @@ def scrape_for_users(driver):
                 # wait till the page loads
                 driver.implicitly_wait(10)
 
+                #*** ---- Button Clicks ---- ***#
+
+                #!click_follow_buttons(driver, data) # click the follow buttons
+                #note: could just save the url if the page has a "follow" button and go through those urls later in the while loop below. This would save time and clicks.
+                # save the url if the page has a "follow" button
+
+
+                #**** ---- Scrape the page for users ---- ****#
                 #^ Get the html of the page
                 try:
                     page_html = requests.get(url).text
@@ -151,6 +190,8 @@ def scrape_for_users(driver):
                             # i.e. data-hovercard-type="user" data-hovercard-url="/users/username/hovercard"
                             # so we need to get the index of the pattern and the index of the /hovercard"
                             # then we can slice the line to get the username
+                            # save the url
+                            viable_urls.append(str(driver.current_url))
                             pattern_index = line.index(user_pattern)
                             hovercard_index = line.index("/hovercard")
                             username = line[pattern_index + len(user_pattern):hovercard_index]
