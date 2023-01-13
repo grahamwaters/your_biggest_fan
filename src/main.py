@@ -181,6 +181,11 @@ while True:
         # now click one of the visible buttons
         follow_buttons[random.randint(0, len(follow_buttons) - 1)].click()
         print(f"Follow button clicked at {datetime.now()} url: {driver.current_url}")
+
+        follow_buttons = soup.find_all("button", string="Follow")
+        for button in follow_buttons:
+            print(button)
+
         time.sleep(random.randint(6, 10))
     except ValueError as e:
         scrape_for_users(driver) # scrape the page for users links
