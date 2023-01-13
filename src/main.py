@@ -76,59 +76,64 @@ def scrape_for_users(driver):
 
     #^ We want to scrape the pages for users that are interested in the same things as you are.
     for url in urls:
-        #^ Get the html of the page
-        try:
-            page_html = requests.get(url).text
-        except Exception as e:
-            print("Error getting the page html: ", e)
+        # the suffix_page is the page that we are scraping i.e. ?page=2
+        # get the first ten pages
+        for suffix_page in range(1, 11):
+            url = url + "?page=" + str(suffix_page)
 
-        #^ Save the html to a file in the data folder
-        try:
-            with open("data/page.html", "w") as f:
-                f.write(page_html)
-        except Exception as e:
-            print("Error saving the page html: ", e)
+            #^ Get the html of the page
+            try:
+                page_html = requests.get(url).text
+            except Exception as e:
+                print("Error getting the page html: ", e)
 
-        #^ Scrape the html for users
+            #^ Save the html to a file in the data folder
+            try:
+                with open("data/page.html", "w") as f:
+                    f.write(page_html)
+            except Exception as e:
+                print("Error saving the page html: ", e)
 
-        soup = BeautifulSoup(page_html, "html.parser")
-        users = soup.find_all("a", {"class": "Link--primary"})
-        users = [user.text for user in users]
+            #^ Scrape the html for users
 
-        #^ Save the users to the dictionary (json) in the data folder
-        # if the users_dict does not already exist in the data folder then make it
-        if not os.path.exists("data/users_dict.json"):
-            users_dict = {}
-        else:
-            with open("data/users_dict.json", "r") as f:
-                users_dict = json.load(f)
+            soup = BeautifulSoup(page_html, "html.parser")
+            users = soup.find_all("a", {"class": "Link--primary"})
+            users = [user.text for user in users]
 
-        # get the users from the page
-        # f4 Link--primary
-        # the usernames are between these:
-        # - data-hovercard-type="user" data-hovercard-url="/users/
-        # and
-        # - /hovercard"
-        # i.e. data-hovercard-type="user" data-hovercard-url="/users/username/hovercard"
-        user_pattern = 'data-hovercard-type="user" data-hovercard-url="/users/'
-        users = [] # will hold the usernames
-        if soup is not None:
-            # look for the pattern
-            for line in soup:
-                if user_pattern in line:
-                    # get the username from the line
-                    # the username is between the pattern and the /hovercard"
-                    # i.e. data-hovercard-type="user" data-hovercard-url="/users/username/hovercard"
-                    # so we need to get the index of the pattern and the index of the /hovercard"
-                    # then we can slice the line to get the username
-                    pattern_index = line.index(user_pattern)
-                    hovercard_index = line.index("/hovercard")
-                    username = line[pattern_index + len(user_pattern):hovercard_index]
-                    users.append(username) # add the username to the list of users
-            # update the dictionary of users with the new users and save it back to the csv file
-            users_dict.update({current_page: users}) # we can extract each user from the list and add them to the dictionary later
-            with open("data/users_dict.json", "w") as f:
-                json.dump(users_dict, f)
+            #^ Save the users to the dictionary (json) in the data folder
+            # if the users_dict does not already exist in the data folder then make it
+            if not os.path.exists("data/users_dict.json"):
+                users_dict = {}
+            else:
+                with open("data/users_dict.json", "r") as f:
+                    users_dict = json.load(f)
+
+            # get the users from the page
+            # f4 Link--primary
+            # the usernames are between these:
+            # - data-hovercard-type="user" data-hovercard-url="/users/
+            # and
+            # - /hovercard"
+            # i.e. data-hovercard-type="user" data-hovercard-url="/users/username/hovercard"
+            user_pattern = 'data-hovercard-type="user" data-hovercard-url="/users/'
+            users = [] # will hold the usernames
+            if soup is not None:
+                # look for the pattern
+                for line in soup:
+                    if user_pattern in line:
+                        # get the username from the line
+                        # the username is between the pattern and the /hovercard"
+                        # i.e. data-hovercard-type="user" data-hovercard-url="/users/username/hovercard"
+                        # so we need to get the index of the pattern and the index of the /hovercard"
+                        # then we can slice the line to get the username
+                        pattern_index = line.index(user_pattern)
+                        hovercard_index = line.index("/hovercard")
+                        username = line[pattern_index + len(user_pattern):hovercard_index]
+                        users.append(username) # add the username to the list of users
+                # update the dictionary of users with the new users and save it back to the csv file
+                users_dict.update({current_page: users}) # we can extract each user from the list and add them to the dictionary later
+                with open("data/users_dict.json", "w") as f:
+                    json.dump(users_dict, f)
 
     # step 5
     try:
