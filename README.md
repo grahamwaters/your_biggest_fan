@@ -44,3 +44,21 @@ The pages we want are:
       2.  or by looking for urls on the page that lead to profiles (links with just https://github.com/ + some_username_suffix like `iamausername`)
 3. https://github.com/microsoft/SynapseML/stargazers
    1. https://github.com/microsoft/SynapseML/stargazers?page=2 (and so on)
+
+# Documentation
+
+This script is a web scraping tool that automates the process of following users on GitHub. It utilizes the Selenium webdriver and BeautifulSoup to navigate and scrape the website.
+
+The script begins by importing the necessary modules, including Selenium's webdriver, BeautifulSoup, and others. Then, it initializes an empty dictionary called url_clicks and opens a CSV file for writing.
+
+The script then loads a JSON file called 'config.json' which is used to configure the script. The script sets up the Chrome webdriver options, such as disabling extensions and GPU, and starts the Chrome browser. The script then navigates to the GitHub login page and waits for 10 seconds.
+
+The script then defines two functions: click_follow_buttons(driver) and scrape_for_users(driver). The click_follow_buttons(driver) function is used to automatically click on the "Follow" buttons on the current page. The function runs in a while loop and continues to click on follow buttons until either the while_counter reaches 40 or the current URL has been clicked 5 times. The function also has a try-except block to handle any exceptions that may occur.
+
+The scrape_for_users(driver) function is used to scrape the current page for users that are interested in the same topics as the user. The function navigates to the current page's repositories and then uses BeautifulSoup to extract the URLs of the repositories. The function then navigates to each repository and extracts the URLs of the users who have starred the repository. These URLs are then saved to a JSON file in the data folder.
+
+The script then runs the click_follow_buttons(driver) function and waits for the user to press enter before following users. The script also displays a message indicating that the user is logged in and ready to follow users.
+
+It's worth noting that the script uses ratelimit package and sleep_and_retry decorator to handle rate limit issue.
+
+In summary, this script is a tool that automates the process of following users on GitHub by clicking on the "Follow" buttons and scraping the website for users who are interested in the same topics as the user.
