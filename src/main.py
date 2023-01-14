@@ -38,55 +38,6 @@ driver = webdriver.Chrome(
 driver.get("https://www.github.com/login")
 
 #* Functions
-
-# @sleep_and_retry
-# def click_follow_buttons(driver):
-#     """
-#     click_follow_buttons
-
-#     _extended_summary_
-
-#     :param driver: _description_
-#     :type driver: _type_
-#     :param data: the data from the config file, contains the good pages to scrape
-#     :type data: _type_
-#     :return: _description_
-#     :rtype: _type_
-#     """
-
-#     while_counter = 0
-#     url_clicks = {}
-#     while True and while_counter < 40:
-#         try:
-#             if driver.current_url in url_clicks:
-#                 if url_clicks[driver.current_url] >= 5:
-#                     continue
-#                 else:
-#                     url_clicks[driver.current_url] = 0
-#             follow_buttons = driver.find_elements(By.CSS_SELECTOR, "input.btn")
-#             follow_buttons = [button for button in follow_buttons if button.is_displayed() and button.is_enabled() and button.get_attribute("value") == "Follow" and button.location["y"] < driver.execute_script("return window.innerHeight")]
-#             if follow_buttons:
-#                 follow_buttons[random.randint(0, len(follow_buttons) - 1)].click()
-#                 print(f"Follow button clicked at {datetime.now()} url: {driver.current_url}")
-#                 time.sleep(random.randint(6, 10))
-#             while_counter += 1
-#             if url_clicks[driver.current_url] >= 30:
-#                 break
-#             if while_counter > 30:
-#                 break
-#             else:
-#                 while_counter += 1
-#             if "This repository has no more watchers" in driver.page_source:
-#                 break
-#             if while_counter > 20:
-#                 break
-#         except Exception as e:
-#             print(e)
-#             continue
-#         while_counter += 1
-
-
-#& refactored
 @sleep_and_retry
 def click_follow_buttons_v2(driver):
     """
@@ -270,27 +221,36 @@ def scrape_for_users(driver):
             print("Error removing the page html: ", e)
 
 #* Main Section
-
 # find the password field and enter the password
 password = WebDriverWait(driver, 15).until(
     EC.presence_of_element_located((By.ID, "password"))
 )
 password.send_keys(data["github_password"])
-
-
 # wait ten seconds for the follow buttons to load
-time.sleep(10)
+time.sleep(random.randint(5,10))
+try:
+    # find the username field and enter it
+    password = WebDriverWait(driver, 15).until(
+        EC.presence_of_element_located((By.ID, "login_field"))
+    )
+    password.send_keys(data["github_username"])
+    # find the login button and click it
+    login_button = WebDriverWait(driver, 15).until(
+        EC.presence_of_element_located((By.NAME, "commit"))
+    )
+    login_button.click()
+except Exception as e:
+    print("Error finding the username field: ", e)
 
-green_light = input("Press enter to start following people on GitHub:\nNote: This indicates that you are logged in and ready for every 'follow' button to be potentially clicked. ")
+    green_light = input("Press enter to start following people on GitHub:\nNote: This indicates that you are logged in and ready for every 'follow' button to be potentially clicked. ")
 
 # go to IBM people page
 # driver.get("https://github.com/orgs/IBM/people")
 # then https://github.com/homedepot/repositories
 
-driver.get("https://github.com/facebook")
-
-
-
+#driver.get("https://github.com/facebook")
+#todo - https://github.com/microsoft
+driver.get("https://github.com/linkedin")
 
 print(
     "Following you now! Go crazy, but make sure to stay on GitHub until we develop this for more general use."
