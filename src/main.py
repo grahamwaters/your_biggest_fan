@@ -39,51 +39,51 @@ driver.get("https://www.github.com/login")
 
 #* Functions
 
-@sleep_and_retry
-def click_follow_buttons(driver):
-    """
-    click_follow_buttons
+# @sleep_and_retry
+# def click_follow_buttons(driver):
+#     """
+#     click_follow_buttons
 
-    _extended_summary_
+#     _extended_summary_
 
-    :param driver: _description_
-    :type driver: _type_
-    :param data: the data from the config file, contains the good pages to scrape
-    :type data: _type_
-    :return: _description_
-    :rtype: _type_
-    """
+#     :param driver: _description_
+#     :type driver: _type_
+#     :param data: the data from the config file, contains the good pages to scrape
+#     :type data: _type_
+#     :return: _description_
+#     :rtype: _type_
+#     """
 
-    while_counter = 0
-    url_clicks = {}
-    while True and while_counter < 40:
-        try:
-            if driver.current_url in url_clicks:
-                if url_clicks[driver.current_url] >= 5:
-                    continue
-                else:
-                    url_clicks[driver.current_url] = 0
-            follow_buttons = driver.find_elements(By.CSS_SELECTOR, "input.btn")
-            follow_buttons = [button for button in follow_buttons if button.is_displayed() and button.is_enabled() and button.get_attribute("value") == "Follow" and button.location["y"] < driver.execute_script("return window.innerHeight")]
-            if follow_buttons:
-                follow_buttons[random.randint(0, len(follow_buttons) - 1)].click()
-                print(f"Follow button clicked at {datetime.now()} url: {driver.current_url}")
-                time.sleep(random.randint(6, 10))
-            while_counter += 1
-            if url_clicks[driver.current_url] >= 30:
-                break
-            if while_counter > 30:
-                break
-            else:
-                while_counter += 1
-            if "This repository has no more watchers" in driver.page_source:
-                break
-            if while_counter > 20:
-                break
-        except Exception as e:
-            print(e)
-            continue
-        while_counter += 1
+#     while_counter = 0
+#     url_clicks = {}
+#     while True and while_counter < 40:
+#         try:
+#             if driver.current_url in url_clicks:
+#                 if url_clicks[driver.current_url] >= 5:
+#                     continue
+#                 else:
+#                     url_clicks[driver.current_url] = 0
+#             follow_buttons = driver.find_elements(By.CSS_SELECTOR, "input.btn")
+#             follow_buttons = [button for button in follow_buttons if button.is_displayed() and button.is_enabled() and button.get_attribute("value") == "Follow" and button.location["y"] < driver.execute_script("return window.innerHeight")]
+#             if follow_buttons:
+#                 follow_buttons[random.randint(0, len(follow_buttons) - 1)].click()
+#                 print(f"Follow button clicked at {datetime.now()} url: {driver.current_url}")
+#                 time.sleep(random.randint(6, 10))
+#             while_counter += 1
+#             if url_clicks[driver.current_url] >= 30:
+#                 break
+#             if while_counter > 30:
+#                 break
+#             else:
+#                 while_counter += 1
+#             if "This repository has no more watchers" in driver.page_source:
+#                 break
+#             if while_counter > 20:
+#                 break
+#         except Exception as e:
+#             print(e)
+#             continue
+#         while_counter += 1
 
 
 #& refactored
@@ -118,14 +118,6 @@ def click_follow_buttons_v2(driver):
     except Exception as e:
         print(e)
 
-
-
-
-
-
-
-
-
 @sleep_and_retry
 def scrape_for_users(driver):
     """
@@ -144,8 +136,19 @@ def scrape_for_users(driver):
     if "people" in current_page:
         current_page = current_page.replace("/people", "")
 
+    url_now = current_page # init
     # go to the repositories page for the company (user)
-    driver.get(current_page + "/repositories")
+    if "repositories" in current_page:
+        driver.get(current_page)
+        time.sleep(5)
+    else:
+        print("not on the repositories page?")
+        # extract the name of the company
+        company_name = current_page.split("/")[-1] # i.e. microsoft
+        # go to the repositories page for the company (user)
+        url_now = "https://github.com/orgs/" + company_name + "/repositories"
+        driver.get(url_now)
+        time.sleep(5)
     soup = BeautifulSoup(driver.page_source, "html.parser")
     repos = soup.find_all("a", {"itemprop": "name codeRepository"})
     # get the links for the repositories
@@ -283,8 +286,8 @@ green_light = input("Press enter to start following people on GitHub:\nNote: Thi
 # go to IBM people page
 # driver.get("https://github.com/orgs/IBM/people")
 # then https://github.com/homedepot/repositories
-driver.get("https://github.com/orgs/IBM/people")
 
+driver.get("https://github.com/facebook")
 
 
 
