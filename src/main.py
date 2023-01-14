@@ -86,6 +86,46 @@ def click_follow_buttons(driver):
         while_counter += 1
 
 
+#& refactored
+@sleep_and_retry
+def click_follow_buttons_v2(driver):
+    """
+    This function clicks the follow buttons on the page. It will click a random follow button on the page and then sleep for a random amount of time between 6 and 10 seconds. It will do this until it has clicked 30 buttons or until it has reached the bottom of the page. It will also stop if it has clicked 5 buttons on the same page.
+
+    :param driver: _description_
+    :type driver: _type_
+    :param data: the data from the config file, contains the good pages to scrape
+    :type data: _type_
+    :return: _description_
+    :rtype: _type_
+    """
+    while_counter = 0
+    try:
+        while while_counter < 40:
+            follow_buttons = driver.find_elements(By.CSS_SELECTOR, "input.btn")
+            follow_buttons = [button for button in follow_buttons if button.is_displayed() and button.is_enabled() and button.get_attribute("value") == "Follow" and button.location["y"] < driver.execute_script("return window.innerHeight")]
+            if follow_buttons:
+                follow_buttons[random.randint(0, len(follow_buttons) - 1)].click()
+                print(f"Follow button clicked at {datetime.now()} url: {driver.current_url}")
+                time.sleep(random.randint(6, 10))
+            while_counter += 1
+            if while_counter > 30:
+                break
+            if "This repository has no more watchers" in driver.page_source:
+                break
+            if while_counter > 20:
+                break
+    except Exception as e:
+        print(e)
+
+
+
+
+
+
+
+
+
 @sleep_and_retry
 def scrape_for_users(driver):
     """
@@ -211,7 +251,7 @@ def scrape_for_users(driver):
                         users_dict.update({current_page: users}) # we can extract each user from the list and add them to the dictionary later
                         with open("data/users_dict.json", "w") as f:
                             json.dump(users_dict, f)
-                        click_follow_buttons(driver)
+                        click_follow_buttons_v2(driver)
                         # if th url has not changed for five iterations then break
                         prev_url = driver.current_url
                         if url == driver.current_url:
